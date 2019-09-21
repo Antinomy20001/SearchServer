@@ -31,7 +31,6 @@ public:
   std::string current;
   std::atomic<bool> exitThread;
   std::string searchMethod;
-  bool usegpu;
   int d;
   std::shared_ptr<faissSearch> searchprocessor;
   RequestHandler *handler;

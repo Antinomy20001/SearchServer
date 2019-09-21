@@ -1,47 +1,21 @@
 #include "common/easylog++.h"
 #include "FaissInterface.h"
 
-#ifdef CUDA_VERSION
-#include "faiss/gpu/GpuAutoTune.h"
-#include "faiss/gpu/StandardGpuResources.h"
-#include "faiss/gpu/utils/DeviceUtils.h"
-#endif
+// #ifdef CUDA_VERSION
+// #include "faiss/gpu/GpuAutoTune.h"
+// #include "faiss/gpu/StandardGpuResources.h"
+// #include "faiss/gpu/utils/DeviceUtils.h"
+// #endif
 
 using namespace std;
 using namespace dev;
 
-faissSearch::faissSearch(const string &indexKey, const int dimension, bool useGPU, bool initGpuResources, faiss::MetricType metric)
+faissSearch::faissSearch(const string &indexKey, const int dimension, faiss::MetricType metric)
 {
     faissIndex.reset(faiss::index_factory(dimension, indexKey.c_str(), metric));
     is_trained = faissIndex->is_trained;
-    usegpu = useGPU;
     ntotal = faissIndex->ntotal;
     dim = dimension;
-    if (useGPU && initGpuResources)
-    {
-#ifdef CUDA_VERSION
-        ngpus = faiss::gpu::getNumDevices();
-        for (int i = 0; i < ngpus; i++)
-        {
-            res.push_back(new faiss::gpu::StandardGpuResources);
-            devs.push_back(i);
-        }
-        options->indicesOptions = faiss::gpu::INDICES_64_BIT;
-        options->useFloat16CoarseQuantizer = false;
-        options->useFloat16 = false;
-        options->usePrecomputed = false;
-        options->reserveVecs = 0;
-        options->storeTransposed = false;
-        options->verbose = true;
-        initGpuResources = true;
-#else
-        LOG(WARNING) << "This release doesn't support GPU search";
-#endif
-    }
-    if (usegpu)
-    {
-        faissIndex.reset(faiss::gpu::index_cpu_to_gpu_multiple(res, devs, faissIndex.get()));
-    }
 }
 
 bool faissSearch::reset()
@@ -77,12 +51,17 @@ bool faissSearch::load(const string &filePath, unordered_map<idx_t, vector<float
         return false;
     }
     unsigned int id = 0;
+    vector<idx_t> ids;
+    ids.resize(count);
+    for (size_t i = 0; i < count; i++){
+        in.read((char *)&id, sizeof(int));
+        ids[i] = static_cast<idx_t>(id);
+    }
     for (size_t i = 0; i < count; i++)
     {
         vector<float> feature(dim, 0);
-        in.read((char *)&id, sizeof(int));
         in.read((char *)feature.data(), dim * sizeof(float));
-        data[static_cast<idx_t>(id)] = move(feature);
+        data[ids[i]] = move(feature);
     }
     in.close();
     return true;
@@ -111,11 +90,12 @@ bool faissSearch::load(const string &filePath, vector<idx_t> &ids, vector<float>
     ids.resize(count);
     unsigned int id = 0;
     vector<float> feature(dim);
-    for (size_t i = 0; i < count; i++)
-    {
-
+    for (size_t i = 0; i < count;i+=1){
         in.read((char *)&id, sizeof(int));
         ids[i] = static_cast<idx_t>(id);
+    }
+    for (size_t i = 0; i < count; i++)
+    {
         in.read((char *)&data[i * dim], dim * sizeof(float));
     }
     in.close();
@@ -126,23 +106,11 @@ bool faissSearch::write_index(const char *filePath)
 {
     try
     {
-        if (usegpu)
-        {
-            faissIndex.reset(faiss::gpu::index_gpu_to_cpu(faissIndex.get()));
-        }
         faiss::write_index(faissIndex.get(), filePath);
-        if (usegpu)
-        {
-            faissIndex.reset(faiss::gpu::index_cpu_to_gpu_multiple(res, devs, faissIndex.get(), options));
-        }
     }
     catch (std::exception &e)
     {
         LOG(ERROR) << e.what();
-        if (usegpu)
-        {
-            faissIndex.reset(faiss::gpu::index_cpu_to_gpu_multiple(res, devs, faissIndex.get(), options));
-        }
         return false;
     }
     return true;
@@ -153,10 +121,6 @@ bool faissSearch::read_index(const char *filePath)
     try
     {
         faissIndex.reset(faiss::read_index(filePath));
-        if (usegpu)
-        {
-            faissIndex.reset(faiss::gpu::index_cpu_to_gpu_multiple(res, devs, faissIndex.get(), options));
-        }
         ntotal = faissIndex->ntotal;
     }
     catch (std::exception &e)
@@ -221,23 +185,11 @@ bool faissSearch::search_range(idx_t n, const float *data, float radius, faiss::
 {
     try
     {
-        if (usegpu)
-        {
-            faissIndex.reset(faiss::gpu::index_gpu_to_cpu(faissIndex.get()));
-        }
         faissIndex->range_search(n, data, radius, result);
-        if (usegpu)
-        {
-            faissIndex.reset(faiss::gpu::index_cpu_to_gpu_multiple(res, devs, faissIndex.get(), options));
-        }
     }
     catch (std::exception &e)
     {
         LOG(ERROR) << e.what();
-        if (usegpu)
-        {
-            faissIndex.reset(faiss::gpu::index_cpu_to_gpu_multiple(res, devs, faissIndex.get(), options));
-        }
         return false;
     }
     return true;
@@ -245,26 +197,14 @@ bool faissSearch::search_range(idx_t n, const float *data, float radius, faiss::
 
 bool faissSearch::remove_ids(const faiss::IDSelector &sel, long &nremove, long &location)
 {
-    if (usegpu && (location == 0 || location == 2))
-    {
-        faissIndex.reset(faiss::gpu::index_gpu_to_cpu(faissIndex.get()));
-    }
     try
     {
         nremove = faissIndex->remove_ids(sel);
         ntotal -= nremove;
-        if ((location == 1 || location == 2) && usegpu)
-        {
-            faissIndex.reset(faiss::gpu::index_cpu_to_gpu_multiple(res, devs, faissIndex.get(), options));
-        }
     }
     catch (std::exception &e)
     {
         LOG(ERROR) << e.what();
-        if (usegpu)
-        {
-            faissIndex.reset(faiss::gpu::index_cpu_to_gpu_multiple(res, devs, faissIndex.get(), options));
-        }
         return false;
     }
     return true;
@@ -272,26 +212,14 @@ bool faissSearch::remove_ids(const faiss::IDSelector &sel, long &nremove, long &
 
 bool faissSearch::remove_ids_range(const faiss::IDSelector &sel, long &nremove)
 {
-    if (usegpu)
-    {
-        faissIndex.reset(faiss::gpu::index_gpu_to_cpu(faissIndex.get()));
-    }
     try
     {
         nremove = faissIndex->remove_ids(sel);
         ntotal -= nremove;
-        if (usegpu)
-        {
-            faissIndex.reset(faiss::gpu::index_cpu_to_gpu_multiple(res, devs, faissIndex.get(), options));
-        }
     }
     catch (std::exception &e)
     {
         LOG(ERROR) << e.what();
-        if (usegpu)
-        {
-            faissIndex.reset(faiss::gpu::index_cpu_to_gpu_multiple(res, devs, faissIndex.get(), options));
-        }
         return false;
     }
     return true;

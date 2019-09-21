@@ -14,6 +14,7 @@
 #include <cassert>
 #include <cstring>
 #include <vector>
+#include <math.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>

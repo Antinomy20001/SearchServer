@@ -2,8 +2,10 @@
 #include <iomanip>
 #include <chrono>
 #include <ctime>
+#include <math.h>
 #include <cassert>
 #include <unordered_map>
+#include <math.h>
 #include <fstream>
 #include "common/easylog++.h"
 #include "libSearch/FaissInterface.h"
@@ -57,7 +59,7 @@ int main()
             xq[d * i + j] = drand48();
         xq[d * i] += i / 1000.;
     }
-    shared_ptr<faissSearch> index(new faissSearch(searchMethod, d, true, true));
+    shared_ptr<faissSearch> index(new faissSearch(searchMethod, d));
 
     string fileName = "data.bin";
     if (!writeToFile(xb, fileName, d, nb))

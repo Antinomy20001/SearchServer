@@ -2,6 +2,7 @@
 #include <iomanip>
 #include <chrono>
 #include <ctime>
+#include <math.h>
 #include <cassert>
 #include "common/easylog++.h"
 #include "common/memusage.h"
@@ -48,7 +49,7 @@ int main()
             xq[d * i + j] = drand48();
             sumq[i] += xq[d * i + j] * xq[d * i + j];
         }
-        sumq[i] = sqrt(sumq[i]);        
+        sumq[i] = sqrt(sumq[i]);
     }
     for (int i = 0; i < nq; i++)
     {
@@ -58,7 +59,7 @@ int main()
         }
     }
 
-    shared_ptr<faissSearch> index(new faissSearch(searchMethod, d, true, true));
+    shared_ptr<faissSearch> index(new faissSearch(searchMethod, d));
     //index->train(nb, xb.data());
     chrono::system_clock::time_point t1 = chrono::system_clock::now();
     index->add_with_ids(nb, xb.data(), xid.data()); // add vectors to the index

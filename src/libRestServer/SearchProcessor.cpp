@@ -56,7 +56,7 @@ void SearchProcessor::doWork()
                 idxp.index = searchprocessor;
                 handler->recentIndex.push_back(idxp);
             }
-            searchprocessor.reset(new faissSearch(searchMethod, d, usegpu));
+            searchprocessor.reset(new faissSearch(searchMethod, d));
             handler->search = searchprocessor;
         }
     }
@@ -65,9 +65,8 @@ void SearchProcessor::doWork()
 SearchProcessor::SearchProcessor(dev::ConfigParams *_cp) : exitThread(false)
 {
     searchMethod = _cp->searchFactory;
-    usegpu = _cp->usegpu;
     d = _cp->dimension;
-    searchprocessor.reset(new faissSearch(searchMethod, d, usegpu));
+    searchprocessor.reset(new faissSearch(searchMethod, d));
     try
     {
         threads = std::thread(&SearchProcessor::doWork, this);

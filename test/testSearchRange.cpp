@@ -1,6 +1,7 @@
 #include <iostream>
 #include <iomanip>
 #include <chrono>
+#include <math.h>
 #include <ctime>
 #include <cassert>
 #include "common/easylog++.h"
@@ -51,7 +52,7 @@ int main()
             xq[d * i + j] = drand48();
             sumq[i] += xq[d * i + j] * xq[d * i + j];
         }
-        sumq[i] = sqrt(sumq[i]);        
+        sumq[i] = sqrt(sumq[i]);
     }
     for (int i = 0; i < nq; i++)
     {
@@ -61,7 +62,7 @@ int main()
         }
     }
 
-    shared_ptr<faissSearch> index(new faissSearch(searchMethod, d, true, true));
+    shared_ptr<faissSearch> index(new faissSearch(searchMethod, d));
     chrono::system_clock::time_point t1 = chrono::system_clock::now();
     index->add_with_ids(nb, xb.data(), xid.data()); // add vectors to the index
     chrono::system_clock::time_point t2 = chrono::system_clock::now();
@@ -116,13 +117,13 @@ int main()
     index->write_index(filePath.c_str());
     chrono::system_clock::time_point t9 = chrono::system_clock::now();
     cout << "|||writing index time: " << (chrono::duration_cast<chrono::milliseconds>(t9 - t8)).count() << " ms|||" << endl;
-    
-    shared_ptr<faissSearch> new_index(new faissSearch(searchMethod, d, false));
+
+    shared_ptr<faissSearch> new_index(new faissSearch(searchMethod, d));
     chrono::system_clock::time_point t10 = chrono::system_clock::now();
     new_index->read_index(filePath.c_str());
     chrono::system_clock::time_point t11 = chrono::system_clock::now();
     cout << "|||reading index time: " << (chrono::duration_cast<chrono::milliseconds>(t11 - t10)).count() << " ms|||" << endl;
-    
+
     {
         vector<long> I(k * nq, 0);
         vector<float> D(k * nq, 0);

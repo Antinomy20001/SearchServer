@@ -7,7 +7,7 @@ namespace dev
 
 /**
  * @brief prase config parameters from json config file
- * 
+ *
  */
 struct ConfigParams
 {
@@ -23,7 +23,6 @@ struct ConfigParams
     std::string searchFactory = "IDMap,Flat";
     unsigned int dimension = 256;
     std::string dataFilePath = "data.bin";
-    bool usegpu = true;
 
     int versionMajor;
     int versionMinor;
@@ -43,14 +42,14 @@ struct ConfigParams
   private:
     /**
      * @brief load config
-     * 
+     *
      * @param configPath path of configure file
      */
     void loadConfig(std::string const &configPath);
 
     /**
      * @brief generate default configure file when configure file don't exist
-     * 
+     *
      * @param configPath path of default configure file
      * @return true success
      * @return false fail
@@ -59,7 +58,7 @@ struct ConfigParams
 
     /**
      * @brief initialize log configure
-     * 
+     *
      * @param logConfig log configure parameter
      */
     void initEasylogging(const LogConfigParams &logConfig) const;

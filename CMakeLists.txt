@@ -22,8 +22,8 @@ OPTION(BUILD_DOCS "Build documentation" ON)
 enable_testing()
 
 # Find cuda
-find_package(CUDA QUIET)
-include_directories("${CUDA_INCLUDE_DIRS}")
+# find_package(CUDA QUIET)
+# include_directories("${CUDA_INCLUDE_DIRS}")
 
 # Include cmake scripts
 include(CompilerSettings)

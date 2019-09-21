@@ -1,6 +1,7 @@
 #include <iostream>
 #include <iomanip>
 #include <chrono>
+#include <math.h>
 #include <ctime>
 #include <cassert>
 #include "common/easylog++.h"
@@ -44,7 +45,7 @@ int main()
             xq[d * i + j] = drand48();
         xq[d * i] += i / 1000.;
     }
-    shared_ptr<faissSearch> index(new faissSearch(searchMethod, d ,false));
+    shared_ptr<faissSearch> index(new faissSearch(searchMethod, d));
     cout << "Search " << nq << " from " << nb << " | Use " << searchMethod << endl;
 
     chrono::system_clock::time_point t1 = chrono::system_clock::now();
@@ -67,7 +68,7 @@ int main()
         index->search(5, xb5.data(), k, D.data(), I.data());
         chrono::system_clock::time_point t4 = chrono::system_clock::now();
         cout << "|||Searching time   : " << (chrono::duration_cast<chrono::milliseconds>(t4 - t3)).count() << " ms|||" << endl;
-        
+
         // print results
         cout << "I=" << endl;
         for (int i = 0; i < 5; i++)

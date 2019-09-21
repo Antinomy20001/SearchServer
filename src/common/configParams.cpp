@@ -105,8 +105,6 @@ void ConfigParams::loadConfig(string const &configPath)
             dimension = config["searchToolParams"]["dimension"].get<int>();
         if (config["searchToolParams"]["dataFilePath"].is_string())
             dataFilePath = config["searchToolParams"]["dataFilePath"].get<string>();
-        if (config["searchToolParams"]["usegpu"].is_boolean())
-            usegpu = config["searchToolParams"]["usegpu"].get<bool>();
     }
     else
         LOG(WARNING) << CONFIG_WARN << "Missing searchToolParams.";
@@ -136,7 +134,6 @@ bool ConfigParams::generateDefaultConfig(string const &configPath) const
     searchConfig["searchFactory"] = searchFactory;
     searchConfig["dimension"] = dimension;
     searchConfig["dataFilePath"] = dataFilePath;
-    searchConfig["usegpu"] = usegpu;
 
     json logParamsConfig;
     logParamsConfig["debugEnabled"] = logConfigParams.debugEnabled;
@@ -217,7 +214,6 @@ void ConfigParams::printParams() const
     ss << "======== Search Parameters =========" << endl;
     ss << "searchFactory : " << searchFactory << endl;
     ss << "dimension     : " << dimension << endl;
-    ss << "usegpu        : " << usegpu << endl;
     ss << "====================================";
     cout << ss.str() << endl;
     LOG(INFO) << endl
