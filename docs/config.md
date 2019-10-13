@@ -9,25 +9,23 @@
 |dataFilePath|string|需要加载的数据文件路径|
 |dimension|int|特征维数|
 |searchFactory|string|faiss的索引结构类型|
-|usegpu|bool|是否使用GPU|
 
 ```json
 {
     "httpParams": {
-        "httpThreads": 2,
-        "listenIP": "0.0.0.0",
-        "port": 2333
+        "httpThreads": 5,
+        "listenIP": "localhost",
+        "port": 23333
     },
     "logConfigParams": {
         "debugEnabled": false,
-        "infoEnabled": true,
+        "infoEnabled": false,
         "warningEnabled": false
     },
     "searchToolParams": {
         "dataFilePath": "data.bin",
         "dimension": 512,
-        "searchFactory": "IDMap,Flat",
-        "usegpu": true
+        "searchFactory": "IDMap,Flat"
     }
 }
 ```

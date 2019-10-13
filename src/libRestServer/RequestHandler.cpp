@@ -64,6 +64,7 @@ void RequestHandler::Reconfig(string const &request, string &responseBody, strin
     json value = json::parse(request);
     json resp;
     bool res = search->reset();
+    resp["code"] = stoi(OK);
     responseBody = FillResponse(interfaceName, resp, RECONFIG_SUCCESS, timepoints);
     httpCode = OK;
 }
@@ -74,32 +75,36 @@ void RequestHandler::Add(string const &request, string &responseBody, string &ht
     string interfaceName("/add");
     json value = json::parse(request);
     json resp;
-    if (value["ntotal"].is_null() || value["data"].is_null())
+    if (value["count"].is_null() || value["vectors"].is_null())
     {
+        resp["code"] = stoi(BAD_REQUEST);
         responseBody = FillResponse(interfaceName, resp, MISSING_ARGUMENTS);
         httpCode = BAD_REQUEST;
         return;
     }
-    if (!value["ntotal"].is_number())
+    if (!value["count"].is_number())
     {
-        responseBody = FillResponse(interfaceName, resp, INVALID_NTOTAL);
+        resp["code"] = stoi(BAD_REQUEST);
+        responseBody = FillResponse(interfaceName, resp, INVALID_COUNT);
         httpCode = BAD_REQUEST;
         return;
     }
-    if (!value["data"].is_object())
+    if (!value["vectors"].is_object())
     {
-        responseBody = FillResponse(interfaceName, resp, INVALID_DATA);
+        resp["code"] = stoi(BAD_REQUEST);
+        responseBody = FillResponse(interfaceName, resp, INVALID_VECTORS);
         httpCode = BAD_REQUEST;
         return;
     }
-    int n = value["ntotal"];
+    int n = value["count"];
     vector<long> ids(n, 0);
     unsigned int dim = cp->dimension;
     vector<float> features;
     features.reserve(n * dim);
-    json object = value["data"];
+    json object = value["vectors"];
     if (object.size() == 0)
     {
+        resp["code"] = stoi(BAD_REQUEST);
         responseBody = FillResponse(interfaceName, resp, EMPTY_DATA);
         httpCode = BAD_REQUEST;
         return;
@@ -111,6 +116,7 @@ void RequestHandler::Add(string const &request, string &responseBody, string &ht
         ids[count] = stol(query.first);
         if (query.second.size() != dim)
         {
+            resp["code"] = stoi(BAD_REQUEST);
             responseBody = FillResponse(interfaceName, resp, INVALID_DIMENSION);
             httpCode = BAD_REQUEST;
             return;
@@ -120,6 +126,7 @@ void RequestHandler::Add(string const &request, string &responseBody, string &ht
     }
 
     bool res = search->add_with_ids(n, features.data(), ids.data());
+    resp["code"] = stoi(OK);
     responseBody = FillResponse(interfaceName, resp, res ? ADD_SUCCESS : ADD_FAIL, timepoints);
     httpCode = OK;
 }
@@ -130,39 +137,50 @@ void RequestHandler::Query(string const &request, string &responseBody, string &
     string interfaceName("/search");
     json value = json::parse(request);
     json resp = json::object();
-    if (value["topk"].is_null() || value["qtotal"].is_null() || value["queries"].is_null())
+    if (value["topk"].is_null() || value["count"].is_null() || value["vectors"].is_null())
     {
+        resp["code"] = stoi(BAD_REQUEST);
         responseBody = FillResponse(interfaceName, resp, MISSING_ARGUMENTS);
         httpCode = BAD_REQUEST;
         return;
     }
     if (!value["topk"].is_number())
     {
+        resp["code"] = stoi(BAD_REQUEST);
         responseBody = FillResponse(interfaceName, resp, INVALID_TOPK);
         httpCode = BAD_REQUEST;
         return;
     }
-    if (!value["qtotal"].is_number())
+    if (!value["count"].is_number())
     {
-        responseBody = FillResponse(interfaceName, resp, INVALID_QTOTAL);
+        resp["code"] = stoi(BAD_REQUEST);
+        responseBody = FillResponse(interfaceName, resp, INVALID_COUNT);
         httpCode = BAD_REQUEST;
         return;
     }
-    if (!value["queries"].is_object())
+    if (!value["vectors"].is_object())
     {
-        responseBody = FillResponse(interfaceName, resp, INVALID_QUERIES);
+        resp["code"] = stoi(BAD_REQUEST);
+        responseBody = FillResponse(interfaceName, resp, INVALID_VECTORS);
         httpCode = BAD_REQUEST;
         return;
     }
     unsigned int dim = cp->dimension;
-    unsigned int n = value["qtotal"];
+    unsigned int n = value["count"];
     idx_t k = value["topk"];
     vector<float> features;
     features.reserve(n * dim);
     vector<string> ids(n);
-    json object = value["queries"];
+    json object = value["vectors"];
+    if (object.size() != n){
+        resp["code"] = stoi(INVALID_VECTORS_SIZE);
+        responseBody = FillResponse(interfaceName, resp, INVALID_VECTORS_SIZE);
+        httpCode = BAD_REQUEST;
+        return;
+    }
     if (object.size() == 0 || n == 0)
     {
+        resp["code"] = stoi(BAD_REQUEST);
         responseBody = FillResponse(interfaceName, resp, EMPTY_QUERIES);
         httpCode = BAD_REQUEST;
         return;
@@ -174,6 +192,7 @@ void RequestHandler::Query(string const &request, string &responseBody, string &
         ids[count] = query.first;
         if (query.second.size() != dim)
         {
+            resp["code"] = stoi(BAD_REQUEST);
             responseBody = FillResponse(interfaceName, resp, INVALID_DIMENSION);
             httpCode = BAD_REQUEST;
             return;
@@ -200,12 +219,13 @@ void RequestHandler::Query(string const &request, string &responseBody, string &
     for (size_t i = 0; i < n; i++)
     {
         label.assign(resLabels.begin() + i * k, resLabels.begin() + i * k + k);
-        queryMap["labels"] = label;
+        queryMap["ids"] = label;
         dis.assign(resDistance.begin() + i * k, resDistance.begin() + i * k + k);
         queryMap["distance"] = dis;
         resultMap[ids[i]] = queryMap;
     }
     resp["result"] = resultMap;
+    resp["code"] = stoi(OK);
     responseBody = FillResponse(interfaceName, resp, res ? SEARCH_SUCCESS : SEARCH_FAIL, timepoints);
     httpCode = OK;
 }

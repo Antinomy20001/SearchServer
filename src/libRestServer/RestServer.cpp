@@ -8,7 +8,7 @@ namespace dev
 
 void handleReady(const Rest::Request &, Http::ResponseWriter response)
 {
-    response.send(Http::Code::Ok, "ready");
+    response.send(Http::Code::Ok, "{\"code\":200}");
 }
 }
 
@@ -33,12 +33,12 @@ void RestServer::setupRoutes()
     using namespace Rest;
     Routes::Post(router, "/add", Routes::bind(&RestServer::AddData, this));
     Routes::Post(router, "/search", Routes::bind(&RestServer::SearchData, this));
-    Routes::Post(router, "/searchRange", Routes::bind(&RestServer::SearchRange, this));
-    Routes::Post(router, "/searchDays", Routes::bind(&RestServer::SearchDays, this));
-    Routes::Post(router, "/delete", Routes::bind(&RestServer::DeleteData, this));
-    Routes::Post(router, "/deleteRange", Routes::bind(&RestServer::DeleteRange, this));
     Routes::Post(router, "/reconfig", Routes::bind(&RestServer::ReconfigData, this));
-    Routes::Get(router, "/ready", Routes::bind(&dev::handleReady));
+    Routes::Get(router, "/ping", Routes::bind(&dev::handleReady));
+    // Routes::Post(router, "/searchRange", Routes::bind(&RestServer::SearchRange, this));
+    // Routes::Post(router, "/searchDays", Routes::bind(&RestServer::SearchDays, this));
+    // Routes::Post(router, "/delete", Routes::bind(&RestServer::DeleteData, this));
+    // Routes::Post(router, "/deleteRange", Routes::bind(&RestServer::DeleteRange, this));
 }
 
 void RestServer::AddData(const Rest::Request &request, Http::ResponseWriter response)
